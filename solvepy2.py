@@ -1,10 +1,10 @@
 import sys
 
-answer = []
-#have to solve right variable answer. 
-#depth issue. 
+answer = [] # Assignment A 
+l = 1
 
 def clause_strip(clause):
+    #used in parsing the DIMACS format input
     ret = []
     tmp = []
     for i in clause:
@@ -36,26 +36,30 @@ def deduction(clauses, v):
     return clauses
 
 def DPLL(clauses):
-    print(clauses)
-    i = containsUnit(clauses, 1)
     global answer
-    while (i>0):
+    global l
+
+    i = containsUnit(clauses, 1)
+    while (i>=0):
         #deduction process
         v = clauses[i][0]
-        answer.append(i)
+        answer.append(v)
         del clauses[i]
         clauses = deduction(clauses, v)
         i = containsUnit(clauses, 1)
-    
+
     if (containsUnit(clauses, 0) > 0):
+        #solve conflict
         return False
+    
     if (len(clauses) == 0):
-        return True 
+        return True
 
-    l = 1
-    while (l in answer):
+    while (l < nVar):
+        if (l not in answer) and (-1*l not in answer): 
+            break 
         l += 1
-
+    
     if DPLL(clauses+[[l]]):
         return True
     elif DPLL(clauses+[[-1*l]]): 
@@ -69,10 +73,10 @@ clauses = []
 comments = [] #line starts with 'c' in .cnf file
 nVar = 0
 nClause = 0
-cnfFormat = ''
 
 f = open(file_name,'r')
 line = f.readline()
+#read the answer in DIMACS format.
 while line:
     if (line[0] == 'c'):
         x = line[1:].strip()
@@ -80,7 +84,6 @@ while line:
             comments.append(x)
     elif (line[0] == 'p'):
         x = line.strip().split()
-        cnfFormat = x[1]
         nVar = int(x[2])
         nClause = int(x[3])
         lines = f.read()
@@ -91,6 +94,13 @@ while line:
 
 clauses = clause_strip(clauses)
 ans = DPLL(clauses)
-print(answer)
+
+#print the answer in DIMACS Format
+if (ans):
+    print("s SATISFIABLE")
+    answer.append(0)
+    print("v "+ " ".join(map(str,answer)))
+else:
+    print("s UNSATISFIABLE")
 f.close()
 
