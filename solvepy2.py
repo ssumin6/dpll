@@ -1,7 +1,6 @@
 import sys
-
-answer = [] # Assignment A 
-l = 1
+import copy
+import random
 
 def clause_strip(clause):
     #used in parsing the DIMACS format input
@@ -23,7 +22,7 @@ def containsUnit(clauses, num):
             return i
     return -1
 
-def deduction(clauses, v):
+def unitPropa(clauses, v):
     i = 0
     nv = -1*v
     while (i < len(clauses)):
@@ -35,37 +34,49 @@ def deduction(clauses, v):
         i += 1
     return clauses
 
-def DPLL(clauses):
-    global answer
-    global l
+def DPLL(clauses, answer):
+    #print("THIS IS C")
+    #print(clauses)
 
     i = containsUnit(clauses, 1)
     while (i>=0):
-        #deduction process
+        #Unit propagation
         v = clauses[i][0]
         answer.append(v)
         del clauses[i]
-        clauses = deduction(clauses, v)
+        clauses = unitPropa(clauses, v)
         i = containsUnit(clauses, 1)
 
-    if (containsUnit(clauses, 0) > 0):
-        #solve conflict
-        return False
-    
-    if (len(clauses) == 0):
-        return True
+    #print("THIS IS A")
+    #print(answer)
 
-    while (l < nVar):
-        if (l not in answer) and (-1*l not in answer): 
-            break 
-        l += 1
+    if (len(clauses) == 0):
+        return answer
     
-    if DPLL(clauses+[[l]]):
-        return True
-    elif DPLL(clauses+[[-1*l]]): 
-        return True
-    else:
+    if (containsUnit(clauses, 0) >= 0):
+        #learned clause 
+        #print("CONFLICT CASE")
         return False
+   
+    backup1 = copy.deepcopy(clauses)
+    backup2 = copy.deepcopy(clauses)
+    ans1 = copy.deepcopy(answer)
+    ans2 = copy.deepcopy(answer)
+
+    l = random.randrange(1, nVar)
+    while (l in answer) or (-1*l in answer):
+        l = random.randrange(1, nVar)
+
+    v = DPLL(backup1 + [[l]], ans1)
+
+    if v:
+        print("INSIDE ")
+        return v
+    v = DPLL(backup2 + [[-1*l]], ans2)
+    if v: 
+        return v
+    
+    return False
     
 
 file_name = sys.argv[1]
@@ -93,13 +104,13 @@ while line:
     line = f.readline()
 
 clauses = clause_strip(clauses)
-ans = DPLL(clauses)
+ans = DPLL(clauses, [])
 
 #print the answer in DIMACS Format
 if (ans):
     print("s SATISFIABLE")
-    answer.append(0)
-    print("v "+ " ".join(map(str,answer)))
+    ans.append(0)
+    print("v "+ " ".join(map(str,ans)))
 else:
     print("s UNSATISFIABLE")
 f.close()
